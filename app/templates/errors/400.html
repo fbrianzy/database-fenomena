@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}400 - Bad Request{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center px-4">
+    <div class="glass rounded-3xl p-8 max-w-2xl w-full text-center card-hover">
+        <div class="mb-6">
+            <div class="w-24 h-24 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-exclamation-triangle text-white text-4xl"></i>
+            </div>
+            <h1 class="text-6xl font-bold text-white mb-2">400</h1>
+            <h2 class="text-2xl font-semibold text-yellow-300 mb-4">Permintaan Tidak Valid</h2>
+            <p class="text-blue-100 text-lg leading-relaxed mb-6">
+                Permintaan yang Anda kirim tidak dapat diproses. 
+                Pastikan data yang Anda masukkan sudah benar.
+            </p>
+        </div>
+        
+        <div class="space-y-3">
+            <a href="/" class="inline-block bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300">
+                <i class="fas fa-home mr-2"></i>
+                Kembali ke Beranda
+            </a>
+            <p class="text-white text-sm">
+                Atau hubungi administrator jika masalah berlanjut
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

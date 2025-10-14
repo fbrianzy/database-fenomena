@@ -1,0 +1,206 @@
+<!-- Modal Commit -->
+<div id="commitModal" class="fixed inset-0 hidden items-center justify-center z-50">
+  <div class="absolute inset-0 bg-black/60"></div>
+  <div class="relative glass rounded-2xl p-6 w-full max-w-lg mx-4">
+    <h3 class="text-xl font-semibold text-white mb-3">Commit Perubahan</h3>
+    <p class="text-blue-100 text-sm mb-3">Berikan pesan commit seperti di GitHub (contoh: <em>edit baris 12: perbaiki ringkasan & sentiment</em>)</p>
+    <textarea id="commitMessage" rows="3"
+              class="w-full p-3 rounded bg-white/10 text-black border border-white/20"
+              placeholder="Tulis pesan commit..."></textarea>
+    <div class="flex items-center justify-end gap-3 mt-4">
+      <button onclick="hideCommitModal()"
+              class="px-4 py-2 rounded-xl bg-white/10 text-blue-100 hover:bg-white/20">Batal</button>
+      <button id="commitConfirmBtn"
+              class="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700">Confirm</button>
+    </div>
+  </div>
+</div>
+
+{% extends "base.html" %}
+{% block title %}Edit CSV – {{ path }}{% endblock %}
+
+{% block content %}
+<div class="glass rounded-2xl p-6">
+  <div class="flex items-center justify-between gap-3 mb-5">
+    <div>
+      <h1 class="text-2xl font-bold text-white">Editor CSV</h1>
+      <p class="text-blue-100 text-sm mt-1"><span class="font-mono">{{ path }}</span></p>
+    </div>
+    <a href="{{ url_for('admin.admin_home') }}"
+       class="bg-white/10 text-blue-100 px-4 py-2 rounded-xl hover:bg-white/20">← Kembali</a>
+  </div>
+
+  <div class="overflow-auto rounded-xl bg-white/5">
+    <table class="min-w-full">
+      <thead>
+        <tr>
+          {% for h in headers %}
+            <th class="text-left text-blue-100 text-xs uppercase tracking-wider px-3 py-2 bg-white/10 sticky top-0">{{ h }}</th>
+          {% endfor %}
+          <th class="text-left text-blue-100 text-xs uppercase tracking-wider px-3 py-2 bg-white/10 sticky top-0">Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        {% for r in rows %}
+          <tr data-row="{{ r[0] }}" class="border-b border-white/10 hover:bg-white/5">
+            {% for cell in r %}
+              {% if loop.index0 == 0 %}
+                <td class="px-3 py-2 text-blue-300 text-sm align-top">
+                  <span class="font-mono">{{ cell }}</span>
+                </td>
+              {% else %}
+                {# kolom data; non-editable default #}
+                <td class="px-3 py-2 text-white text-sm align-top">
+                  <div class="cell-view">{{ cell }}</div>
+                  <textarea class="cell-edit hidden w-full p-2 rounded bg-white/10 text-black border border-white/20"
+                            rows="2">{{ cell }}</textarea>
+                </td>
+              {% endif %}
+            {% endfor %}
+            <td class="px-3 py-2 whitespace-nowrap">
+              <div class="flex items-center gap-3">
+                <button class="btn-edit text-green-300 text-sm hover:underline">Edit</button>
+                <button class="btn-update text-blue-300 text-sm hover:underline hidden">Update</button>
+                <button class="btn-cancel text-yellow-300 text-sm hover:underline hidden">Cancel</button>
+                <button class="text-red-300 text-sm hover:underline"
+                        onclick="deleteRow('{{ r[0] }}')">Hapus</button>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="text-blue-200 text-xs mt-3">
+    Mode edit berlaku **per baris**. Klik <b>Edit</b> → ubah sel (textarea) → <b>Update</b> → isi pesan commit → <b>Confirm</b>.
+  </p>
+</div>
+
+
+
+<script>
+const PATH = {{ path|tojson }};
+const CSRF = {{ csrf_token|tojson }};
+
+// util toast
+function toast(msg, type='info'){ if(window.showToast) showToast(msg, type); else alert(msg); }
+
+// toggle row edit mode
+function setRowEditMode(tr, editing){
+  const cells = tr.querySelectorAll('td');
+  for(let i=1; i<cells.length-1; i++){ // skip index col & action col
+    const view = cells[i].querySelector('.cell-view');
+    const edit = cells[i].querySelector('.cell-edit');
+    if(!view || !edit) continue;
+    if(editing){
+      view.classList.add('hidden');
+      edit.classList.remove('hidden');
+      edit.value = view.textContent;
+    }else{
+      view.classList.remove('hidden');
+      edit.classList.add('hidden');
+      // sinkron balik tampilan (tanpa commit)
+      view.textContent = edit.value;
+    }
+  }
+  tr.querySelector('.btn-edit').classList.toggle('hidden', editing);
+  tr.querySelector('.btn-update').classList.toggle('hidden', !editing);
+  tr.querySelector('.btn-cancel').classList.toggle('hidden', !editing);
+}
+
+// wire buttons per row
+document.querySelectorAll('#tbody tr').forEach(tr=>{
+  const btnEdit   = tr.querySelector('.btn-edit');
+  const btnUpdate = tr.querySelector('.btn-update');
+  const btnCancel = tr.querySelector('.btn-cancel');
+
+  btnEdit?.addEventListener('click', ()=> setRowEditMode(tr, true));
+  btnCancel?.addEventListener('click', ()=> setRowEditMode(tr, false));
+
+  btnUpdate?.addEventListener('click', ()=>{
+    // ambil data row setelah edit (belum commit)
+    const rowIndex = parseInt(tr.getAttribute('data-row'));
+    const headers = {{ headers|tojson }};
+    const rowData = {};
+    const tds = tr.querySelectorAll('td');
+    // susun dari kolom ke-1 (karena ke-0 adalah __row_index__)
+    for(let i=1; i<tds.length-1; i++){
+      const header = headers[i];
+      const editEl = tds[i].querySelector('.cell-edit');
+      rowData[header] = editEl ? editEl.value : (tds[i].querySelector('.cell-view')?.textContent || '');
+    }
+    // buka modal → confirm commit → kirim
+    openCommitFlow({ rowIndex, rowData, tr });
+  });
+});
+
+// modal handlers
+let _pendingCommit = null;
+
+function openCommitFlow(payload){
+  _pendingCommit = payload;
+  document.getElementById('commitMessage').value = '';
+  document.getElementById('commitModal').classList.remove('hidden');
+  document.getElementById('commitModal').classList.add('flex');
+  setTimeout(()=> document.getElementById('commitMessage').focus(), 50);
+}
+function hideCommitModal(){
+  document.getElementById('commitModal').classList.add('hidden');
+  document.getElementById('commitModal').classList.remove('flex');
+  _pendingCommit = null;
+}
+document.getElementById('commitConfirmBtn').addEventListener('click', async ()=>{
+  if(!_pendingCommit) return hideCommitModal();
+  const msg = document.getElementById('commitMessage').value.trim() || `Admin: update row ${PATH}`;
+  const { rowIndex, rowData, tr } = _pendingCommit;
+  try{
+    const res = await fetch('{{ url_for("admin.api_update_row") }}', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'X-CSRF-Token': CSRF },
+      body: JSON.stringify({ path: PATH, row_index: rowIndex, row_data: rowData, message: msg })
+    });
+    const json = await res.json();
+    if(json.ok){
+      toast('Perubahan tersimpan ✓', 'success');
+      // keluar mode edit (tampilan sudah sinkron dari setRowEditMode false sebelumnya)
+      setRowEditMode(tr, false);
+    }else{
+      toast(json.error || 'Gagal commit', 'error');
+    }
+  }catch(e){
+    console.error(e);
+    toast('Jaringan bermasalah', 'error');
+  }finally{
+    hideCommitModal();
+  }
+});
+
+// delete row tetap sama
+async function deleteRow(rowIndex){
+  if(!confirm('Hapus baris ini?')) return;
+  try{
+    const res = await fetch('{{ url_for("admin.api_delete_row") }}', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', 'X-CSRF-Token': CSRF},
+      body: JSON.stringify({ path: PATH, row_index: parseInt(rowIndex) })
+    });
+    const json = await res.json();
+    if(json.ok){
+      const tr = document.querySelector(`tr[data-row="${rowIndex}"]`);
+      if(tr) tr.remove();
+      // reindex tampilan
+      document.querySelectorAll('#tbody tr').forEach((row, i)=>{
+        row.setAttribute('data-row', i);
+        row.children[0].querySelector('span').textContent = i;
+      });
+      toast('Baris dihapus', 'success');
+    }else{
+      toast(json.error || 'Gagal hapus', 'error');
+    }
+  }catch(e){
+    toast('Jaringan bermasalah', 'error');
+  }
+}
+</script>
+{% endblock %}

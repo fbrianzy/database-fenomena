@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}503 - Service Unavailable{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center px-4">
+    <div class="glass rounded-3xl p-8 max-w-2xl w-full text-center card-hover">
+        <div class="mb-6">
+            <div class="w-24 h-24 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-tools text-white text-4xl"></i>
+            </div>
+            <h1 class="text-6xl font-bold text-white mb-2">503</h1>
+            <h2 class="text-2xl font-semibold text-orange-300 mb-4">Layanan Tidak Tersedia</h2>
+            <p class="text-blue-100 text-lg leading-relaxed mb-6">
+                Server sedang dalam pemeliharaan atau mengalami beban tinggi. 
+                Silakan coba lagi dalam beberapa saat.
+            </p>
+        </div>
+        
+        <div class="glass rounded-xl p-6 mb-6">
+            <div class="flex items-center justify-center space-x-2 mb-4">
+                <div class="w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
+                <div class="w-3 h-3 bg-orange-400 rounded-full animate-pulse" style="animation-delay: 0.2s;"></div>
+                <div class="w-3 h-3 bg-orange-400 rounded-full animate-pulse" style="animation-delay: 0.4s;"></div>
+            </div>
+            <p class="text-slate-300 text-sm">
+                Server akan kembali aktif dalam waktu dekat...
+            </p>
+        </div>
+        
+        <div class="space-y-3">
+            <button onclick="window.location.reload()" class="inline-block bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300">
+                <i class="fas fa-sync-alt mr-2"></i>
+                Coba Lagi
+            </button>
+            <p class="text-white text-sm">
+                Status: <a href="/status" class="text-blue-300 hover:text-white">Cek Status Server</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

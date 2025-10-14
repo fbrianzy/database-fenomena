@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="relative overflow-hidden">
+    <!-- Background Pattern -->
+    <div class="absolute inset-0 opacity-10">
+        <svg class="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+    </div>
+
+    <!-- Main Hero Content -->
+    <div class="glass rounded-3xl p-8 mb-8 relative overflow-hidden">
+        <!-- Decorative elements 
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full opacity-20 transform translate-x-16 -translate-y-16"></div>
+        <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-400 to-yellow-400 rounded-full opacity-20 transform -translate-x-12 translate-y-12"></div> -->
+        
+        <div class="relative z-10 text-center">
+            <div class="mb-6">
+                <h1 class="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
+                    Selamat Datang di 
+                    <span class="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                        Dashboard BPS Sidoarjo
+                    </span>
+                </h1>
+                <p class="text-xl text-blue-100 max-w-3xl mx-auto leading-relaxed">
+                    Pusat informasi fenomena yang diberitakan di Kabupaten Sidoarjo dengan analisis mendalam, 
+                    tren terkini, dan insight berbasis data untuk pengambilan keputusan yang lebih baik.
+                </p>
+            </div>
+            
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <a href="/fenomena" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-2xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center">
+                    <i class="fas fa-search mr-3"></i>
+                    Jelajahi Fenomena
+                </a>
+                <a href="/trend" class="glass text-white px-8 py-4 rounded-2xl font-semibold hover:bg-white hover:bg-opacity-20 transition-all duration-300 flex items-center">
+                    <i class="fas fa-chart-line mr-3"></i>
+                    Lihat Tren
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Overview - NO PULSE ANIMATION -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Fenomena -->
+    <div class="glass rounded-2xl p-6 card-hover group">
+    <div class="flex items-center justify-between">
+        <div>
+        <p class="text-blue-200 text-sm font-medium mb-1">Total Fenomena</p>
+        <p class="text-white text-3xl font-bold"> {{ fenomena|length }} </p>
+        <p class="text-sm mt-2
+        {% if fenomena_mom_pct is not none %}
+            {% set mom = fenomena_mom_pct|float %}
+            {{ 'text-green-300' if mom >= 0 else 'text-red-300' }}
+        {% else %}
+            text-blue-300
+        {% endif %}">
+        {% if fenomena_mom_pct is not none %}
+            <i class="fas {{ 'fa-arrow-up' if mom >= 0 else 'fa-arrow-down' }} mr-1"></i>
+            {{ '%.1f'|format(mom) }}% dari bulan lalu
+        {% else %}
+            <i class="fas fa-minus mr-1"></i>
+            n/a (belum ada pembanding)
+        {% endif %}
+        </p>
+        {% if label_now %}
+            <p class="text-blue-200 text-xs mt-1">
+            Periode: {{ label_now }}{% if label_prev %} vs {{ label_prev }}{% endif %}
+            </p>
+        {% endif %}
+        </div>
+        <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+        <i class="fas fa-newspaper text-white text-2xl"></i>
+        </div>
+    </div>
+    </div>
+
+    <!-- Sentimen Positif -->
+    <div class="glass rounded-2xl p-6 card-hover group">
+    <div class="flex items-center justify-between">
+        <div>
+        <p class="text-green-200 text-sm font-medium mb-1">Sentimen Positif</p>
+        <p class="text-white text-3xl font-bold">
+        {{ '%.1f'|format((pos_pct_now or 0)|float) }}%
+        </p>
+
+        {% if pos_delta_pp is not none %}
+        {% set d = pos_delta_pp|float %}
+        <p class="text-sm mt-2 {{ 'text-green-300' if d >= 0 else 'text-red-300' }}">
+            <i class="fas {{ 'fa-arrow-up' if d >= 0 else 'fa-arrow-down' }} mr-1"></i>
+            {{ '+' if d >= 0 else '' }}{{ '%.1f'|format(d) }} p.p. dari bulan lalu
+        </p>
+        {% else %}
+        <p class="text-blue-300 text-sm mt-2">
+            <i class="fas fa-minus mr-1"></i>
+            n/a (belum ada pembanding)
+        </p>
+        {% endif %}
+        {% if label_now %}
+            <p class="text-blue-200 text-xs mt-1">
+            Periode: {{ label_now }}{% if label_prev %} vs {{ label_prev }}{% endif %}
+            </p>
+        {% endif %}
+        </div>
+        <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+        <i class="fas fa-smile text-white text-2xl"></i>
+        </div>
+    </div>
+    </div>
+
+    <!-- Kategori Aktif -->
+    <div class="glass rounded-2xl p-6 card-hover group">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-purple-200 text-sm font-medium mb-1">Kategori Aktif</p>
+                <p class="text-white text-3xl font-bold">{{ data|length }} data</p>
+                <p class="text-blue-300 text-sm mt-2">
+                    <i class="fas fa-minus mr-1"></i>
+                    Stabil
+                </p>
+            </div>
+            <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <i class="fas fa-tags text-white text-2xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Terakhir
+    <div class="glass rounded-2xl p-6 card-hover group">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-blue-200 text-sm font-medium mb-1">Update Terakhir</p>
+                <p class="text-white text-lg font-bold">1 jam lalu</p>
+                <p class="text-green-300 text-sm mt-2">
+                    <i class="fas fa-clock mr-1"></i>
+                    Real-time sync
+                </p>
+            </div>
+            <div class="w-16 h-16 bg-gradient-to-br from-pink-500 to-red-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <i class="fas fa-sync-alt text-white text-2xl"></i>
+            </div>
+        </div>
+    </div> -->
+    <!-- Update Terakhir -->
+    <div class="glass rounded-2xl p-6 card-hover group">
+    <div class="flex items-center justify-between">
+        <div>
+        <p class="text-blue-200 text-sm font-medium mb-1">Update Terakhir</p>
+
+        {% if latest_sync_iso %}
+            <p class="text-white text-lg font-bold">
+            <span id="last-sync-rel" title="{{ latest_sync_iso }}">{{ latest_sync_iso }}</span>
+            </p>
+            <p class="text-blue-200 text-xs mt-1">
+            Sumber: <code>{{ latest_sync_path }}</code>
+            </p>
+        {% else %}
+            <p class="text-white text-lg font-bold">N/A</p>
+        {% endif %}
+
+        <p class="text-green-300 text-sm mt-2">
+            <i class="fas fa-clock mr-1"></i>
+            Real-time sync
+        </p>
+        </div>
+        <div class="w-16 h-16 bg-gradient-to-br from-pink-500 to-red-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+        <i class="fas fa-sync-alt text-white text-2xl"></i>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<!-- Feature Cards -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Analisis Sentimen -->
+    <div class="glass rounded-3xl p-8 card-hover">
+        <div class="flex items-center mb-6">
+            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
+                <i class="fas fa-brain text-white text-xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-white">Analisis Sentimen AI</h3>
+        </div>
+        <p class="text-blue-100 mb-6 leading-relaxed">
+            Teknologi AI canggih menganalisis sentimen berita secara real-time untuk memberikan insight mendalam 
+            tentang persepsi publik terhadap berbagai fenomena di Sidoarjo.
+        </p>
+        <div class="flex items-center justify-between">
+            <div class="flex space-x-4">
+                <div class="text-center">
+                    <div class="w-3 h-3 bg-green-400 rounded-full mb-2"></div>
+                    <span class="text-xs text-green-300">Positif</span>
+                </div>
+                <div class="text-center">
+                    <div class="w-3 h-3 bg-red-400 rounded-full mb-2"></div>
+                    <span class="text-xs text-red-300">Negatif</span>
+                </div>
+            </div>
+            <a href="/fenomena" class="text-blue-300 hover:text-white transition-colors">
+                Lihat Detail <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Trend Monitoring -->
+    <div class="glass rounded-3xl p-8 card-hover">
+        <div class="flex items-center mb-6">
+            <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-600 rounded-xl flex items-center justify-center mr-4">
+                <i class="fas fa-chart-area text-white text-xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-white">Monitoring Tren</h3>
+        </div>
+        <p class="text-blue-100 mb-6 leading-relaxed">
+            Pantau perkembangan fenomena dari waktu ke waktu dengan visualisasi interaktif yang memudahkan 
+            identifikasi pola dan tren yang sedang berkembang.
+        </p>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="w-2 h-8 bg-gradient-to-t from-blue-600 to-blue-400 rounded"></div>
+                <div class="w-2 h-6 bg-gradient-to-t from-purple-600 to-purple-400 rounded"></div>
+                <div class="w-2 h-10 bg-gradient-to-t from-green-600 to-green-400 rounded"></div>
+                <div class="w-2 h-4 bg-gradient-to-t from-yellow-600 to-yellow-400 rounded"></div>
+            </div>
+            <a href="/trend" class="text-green-300 hover:text-white transition-colors">
+                Lihat Grafik <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="glass rounded-3xl p-8">
+    <h3 class="text-2xl font-bold text-white mb-6 text-center">Aksi Cepat</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Search Fenomena -->
+        <a href="/fenomena" class="group bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 hover:from-blue-600 hover:to-blue-700 transition-all duration-300 transform hover:scale-105">
+            <div class="flex items-center justify-center w-12 h-12 bg-white bg-opacity-20 rounded-xl mb-4 group-hover:scale-110 transition-transform">
+                <i class="fas fa-search text-white text-xl"></i>
+            </div>
+            <h4 class="text-white font-semibold mb-2">Cari Fenomena</h4>
+            <p class="text-blue-100 text-sm">Temukan fenomena berdasarkan kategori, tanggal, atau sentimen</p>
+        </a>
+
+        <!-- View Trends -->
+        <a href="/trend" class="group bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 hover:from-purple-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105">
+            <div class="flex items-center justify-center w-12 h-12 bg-white bg-opacity-20 rounded-xl mb-4 group-hover:scale-110 transition-transform">
+                <i class="fas fa-chart-line text-white text-xl"></i>
+            </div>
+            <h4 class="text-white font-semibold mb-2">Analisis Tren</h4>
+            <p class="text-purple-100 text-sm">Visualisasi data dan pola fenomena dari waktu ke waktu</p>
+        </a>
+
+        <!-- About Us -->
+        <a href="/about" class="group bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:scale-105">
+            <div class="flex items-center justify-center w-12 h-12 bg-white bg-opacity-20 rounded-xl mb-4 group-hover:scale-110 transition-transform">
+                <i class="fas fa-info-circle text-white text-xl"></i>
+            </div>
+            <h4 class="text-white font-semibold mb-2">Tentang Kami</h4>
+            <p class="text-green-100 text-sm">Pelajari lebih lanjut tentang BPS Sidoarjo dan misinya</p>
+        </a>
+    </div>
+</div>
+
+<script>
+
+    function timeAgo(date) {
+        const seconds = Math.floor((new Date() - date) / 1000);
+        const rtf = new Intl.RelativeTimeFormat('id', { numeric: 'auto' });
+        const ranges = {
+        year: 3600*24*365,
+        month: 3600*24*30,
+        week: 3600*24*7,
+        day: 3600*24,
+        hour: 3600,
+        minute: 60,
+        second: 1
+        };
+        for (const [unit, secs] of Object.entries(ranges)) {
+        const delta = Math.floor(seconds / secs);
+        if (Math.abs(delta) >= 1) {
+            return rtf.format(-delta, unit);
+        }
+        }
+        return 'baru saja';
+    }
+
+    function updateLastSync() {
+        const el = document.getElementById('last-sync-rel');
+        if (!el) return;
+        const iso = el.getAttribute('title') || el.textContent;
+        const dt = new Date(iso);
+        el.textContent = timeAgo(dt);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updateLastSync();
+        setInterval(updateLastSync, 30000);
+    });
+
+    // REMOVED PULSE ANIMATION - Interactive animations without blinking
+    document.addEventListener('DOMContentLoaded', function() {
+        // REMOVED: Animate stats on scroll - NO MORE PULSE ANIMATION
+        /*
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationDelay = '0.2s';
+                    entry.target.classList.add('animate-pulse'); // ← REMOVED THIS LINE
+                }
+            });
+        });
+
+        document.querySelectorAll('.card-hover').forEach(card => {
+            observer.observe(card);
+        });
+        */
+
+        // Alternative: Smooth entrance animation without pulse (optional)
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, {
+            threshold: 0.1
+        });
+
+        // Apply smooth entrance effect
+        const statsCards = document.querySelectorAll('.card-hover');
+        statsCards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+            card.classList.add('animate-fade-in');
+        });
+
+        // Keep loading animation for links (no pulse)
+        document.querySelectorAll('a[href^="/"]').forEach((link, index) => {
+            link.addEventListener('click', function(e) {
+                // Add loading state without pulse
+                const icon = this.querySelector('i');
+                if (icon && !icon.classList.contains('fa-arrow-right')) {
+                    icon.classList.add('fa-spin');
+                    setTimeout(() => {
+                        if (icon) icon.classList.remove('fa-spin');
+                    }, 1000);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

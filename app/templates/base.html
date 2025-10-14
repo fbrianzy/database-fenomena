@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Dashboard{% endblock %}</title>
+    <link rel="icon" href="{{ url_for('static', filename='assets/iconbps.png') }}" type="image/x-icon">
+    <!-- Tailwind prebuilt (tanpa arbitrary classes seperti z-[...]) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; display: none; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(45deg, #3b82f6, #1d4ed8); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: linear-gradient(45deg, #1d4ed8, #1e40af); }
+
+        /* Hilangkan default arrow select (cross-browser) */
+        select { appearance: none; -webkit-appearance: none; -moz-appearance: none; }
+
+        /* Dark gradient background */
+        .gradient-bg {
+            background: linear-gradient(-45deg, #1a1a2e, #16213e, #0f3460, #1a1a2e);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        @keyframes gradientShift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+        /* Glassmorphism */
+        .glass { background: rgba(30,30,46,0.3); backdrop-filter: blur(15px); border:1px solid rgba(255,255,255,0.1); }
+
+        /* NAVBAR link effect */
+        .nav-link-gradient{position:relative;display:inline-flex;align-items:center;padding:.75rem 1rem;color:#fff;text-decoration:none;border-radius:.75rem;transition:all .3s cubic-bezier(.4,0,.2,1);overflow:hidden;background:rgba(255,255,255,.05);font-weight:500}
+        .nav-link-gradient::before{content:'';position:absolute;inset:0;background:linear-gradient(-45deg,rgba(59,130,246,.4),rgba(147,51,234,.4),rgba(236,72,153,.4),rgba(16,185,129,.4),rgba(59,130,246,.4));background-size:400% 400%;border-radius:.75rem;opacity:0;animation:gradientShift 3s ease infinite;transition:opacity .3s ease;z-index:-1}
+        .nav-link-gradient:hover::before{opacity:1}
+        .nav-link-gradient:hover{color:#fff;transform:translateY(-3px);box-shadow:0 10px 30px -5px rgba(0,0,0,.3);text-shadow:0 0 10px rgba(255,255,255,.5)}
+        .nav-link-gradient:active{transform:translateY(-1px)}
+        .nav-link-active{background:rgba(59,130,246,.3)!important;color:#fff!important;box-shadow:0 5px 15px -3px rgba(59,130,246,.3)}
+        .nav-link-active::before{opacity:.7!important}
+
+        @media (max-width:768px){.nav-link-gradient{width:100%;margin:.25rem 0;justify-content:flex-start}.mobile-menu-item{width:100%;display:block}}
+
+        /* Animations & cards */
+        .float{animation:float 6s ease-in-out infinite}
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+        .glow-on-hover:hover{box-shadow:0 0 20px rgba(100,116,139,.4);transform:translateY(-2px);transition:all .3s ease}
+        @keyframes blink{0%,50%{border-color:transparent}51%,100%{border-color:#94a3b8}}
+        .pulse-slow{animation:pulse 3s cubic-bezier(.4,0,.6,1) infinite}
+        .card-hover{transition:all .3s cubic-bezier(.4,0,.2,1)}
+        .card-hover:hover{transform:translateY(-8px) scale(1.02);box-shadow:0 25px 50px -12px rgba(0,0,0,.25)}
+
+        /* Trend styles (dari file kamu) */
+        .parallax{background-attachment:fixed;background-position:center;background-repeat:no-repeat;background-size:cover}
+        .chart-container{position:relative;background:linear-gradient(135deg, rgba(255,255,255,.02), rgba(255,255,255,.08));border-radius:1rem;overflow:hidden}
+        .chart-container::before{content:'';position:absolute;inset:0;background:linear-gradient(45deg, transparent 30%, rgba(59,130,246,.03) 50%, transparent 70%);pointer-events:none}
+        .chart-loading{display:flex;align-items:center;justify-content:center;min-height:200px;background:rgba(255,255,255,.02);border-radius:1rem}
+        .chart-loading::after{content:'';width:40px;height:40px;border:3px solid rgba(59,130,246,.3);border-radius:50%;border-top-color:#3b82f6;animation:spin 1s ease-in-out infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .stats-card{transition:all .3s cubic-bezier(.4,0,.2,1);background:linear-gradient(135deg, rgba(255,255,255,.05), rgba(255,255,255,.02))}
+        .stats-card:hover{transform:translateY(-4px);background:linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.05));box-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 10px 10px -5px rgba(0,0,0,.04)}
+        .stats-card .icon-container{transition:transform .3s ease}
+        .stats-card:hover .icon-container{transform:scale(1.1) rotate(5deg)}
+        .controls-glass{background:linear-gradient(135deg, rgba(255,255,255,.1), rgba(255,255,255,.05));backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);box-shadow:0 8px 32px 0 rgba(31,38,135,.37), inset 0 1px 0 rgba(255,255,255,.1)}
+        select{background-image:url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");background-position:right .5rem center;background-repeat:no-repeat;background-size:1.5em 1.5em;padding-right:2.5rem}
+        .category-progress{transition:width .8s cubic-bezier(.4,0,.2,1);background:linear-gradient(90deg,#3b82f6,#8b5cf6)}
+        .category-item{transition:all .3s ease}
+        .category-item:hover{background:rgba(255,255,255,.08);transform:translateX(4px)}
+        .chart-fullscreen{position:fixed;inset:0;width:100vw;height:100vh;z-index:9999;background:linear-gradient(-45deg,#1a1a2e,#16213e,#0f3460,#1a1a2e);display:flex;align-items:center;justify-content:center;padding:2rem}
+        @media (max-width:768px){.chart-container{margin:.5rem}.stats-grid{grid-template-columns:1fr 1fr;gap:1rem}.stats-card{padding:1rem}.stats-card .text-3xl{font-size:1.5rem}}
+        .chartjs-tooltip{background:rgba(30,41,59,.95)!important;border:1px solid rgba(59,130,246,.3)!important;border-radius:.5rem!important;box-shadow:0 10px 15px -3px rgba(0,0,0,.1)!important}
+        .chart-action-btn{transition:all .3s cubic-bezier(.4,0,.2,1)}
+        .chart-action-btn:hover{background:rgba(59,130,246,.1);transform:scale(1.05)}
+        .insights-section{background:linear-gradient(135deg, rgba(59,130,246,.05), rgba(147,51,234,.05))}
+        .insight-item{transition:all .3s ease;padding:.75rem;border-radius:.5rem}
+        .insight-item:hover{background:rgba(255,255,255,.05);transform:translateX(8px)}
+        .insight-bullet{transition:all .3s ease}
+        .insight-item:hover .insight-bullet{transform:scale(1.5);box-shadow:0 0 10px currentColor}
+        .btn-loading{position:relative;pointer-events:none}
+        .btn-loading::after{content:'';position:absolute;width:16px;height:16px;border:2px solid transparent;border-top:2px solid currentColor;border-radius:50%;animation:spin 1s linear infinite;left:50%;top:50%;margin:-8px 0 0 -8px}
+        .chart-legend{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;margin-top:1rem}
+        .chart-legend-item{display:flex;align-items:center;gap:.5rem;padding:.25rem .75rem;background:rgba(255,255,255,.05);border-radius:1rem;font-size:.875rem;color:rgba(255,255,255,.8)}
+        .chart-legend-color{width:12px;height:12px;border-radius:50%}
+        @keyframes fadeInUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+        .animate-fade-in-up{animation:fadeInUp .6s ease-out}
+        .data-source-indicator{position:relative;overflow:hidden}
+        .data-source-indicator::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:2px;background:linear-gradient(90deg,transparent,#3b82f6,transparent);animation:shimmer 2s infinite}
+        @keyframes shimmer{0%{left:-100%}100%{left:100%}}
+
+        /* TOAST progress bar animation (karena Tailwind build ini tidak punya animate-[...]) */
+        @keyframes shrink { from { width: 100%; } to { width: 0%; } }
+    </style>
+</head>
+
+<body class="gradient-bg min-h-screen">
+
+    <!-- ===== Toast root: letakkan DI LUAR navbar/wrapper + z-index super tinggi ===== -->
+    <div id="toast-root"
+         class="fixed top-4 right-4 space-y-2 pointer-events-none"
+         style="z-index:2147483647;"></div>
+
+    <!-- Background dekorasi -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute top-10 left-10 w-32 h-32 bg-slate-600 rounded-full opacity-10 float"></div>
+        <div class="absolute top-1/3 right-20 w-20 h-20 bg-slate-500 rounded-full opacity-15 float" style="animation-delay:-2s;"></div>
+        <div class="absolute bottom-20 left-1/4 w-16 h-16 bg-slate-700 rounded-full opacity-12 float" style="animation-delay:-4s;"></div>
+        <div class="absolute top-2/3 right-1/3 w-24 h-24 bg-slate-400 rounded-full opacity-10 float" style="animation-delay:-1s;"></div>
+    </div>
+
+    <div class="flex flex-col min-h-screen relative z-10">
+
+        <nav class="glass sticky top-0" style="z-index:50;">
+            <div class="max-w-7xl mx-auto px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center shadow-lg">
+                            <img src="{{ url_for('static', filename='assets/iconbps.png') }}" alt="Logo BPS" class="w-10 h-10 object-contain rounded-md shadow-md brightness-110">
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-white">BPS Sidoarjo</h1>
+                            <p class="text-xs text-white">Data & Statistics Hub</p>
+                        </div>
+                    </div>
+
+                    <!-- Desktop navbar -->
+                    <div class="hidden md:flex items-center space-x-2">
+                        <a href="/" class="nav-link-gradient"><i class="fas fa-home mr-2"></i>Home</a>
+                        <a href="/fenomena" class="nav-link-gradient"><i class="fas fa-eye mr-2"></i>Fenomena</a>
+                        <a href="/trend" class="nav-link-gradient"><i class="fas fa-chart-area mr-2"></i>Trend Chart</a>
+                        <a href="/about" class="nav-link-gradient"><i class="fas fa-info-circle mr-2"></i>About</a>
+                    </div>
+
+                    <!-- Mobile hamburger -->
+                    <div class="md:hidden">
+                        <button onclick="toggleMobileMenu()" class="hamburger-btn text-white hover:text-slate-300 transition-all p-2">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mobile menu -->
+                <div id="mobileMenu" class="hidden md:hidden mt-4 space-y-2">
+                    <a href="/" class="nav-link-gradient mobile-menu-item"><i class="fas fa-home mr-2"></i>Home</a>
+                    <a href="/fenomena" class="nav-link-gradient mobile-menu-item"><i class="fas fa-eye mr-2"></i>Fenomena</a>
+                    <a href="/trend" class="nav-link-gradient mobile-menu-item"><i class="fas fa-chart-area mr-2"></i>Trend Chart</a>
+                    <a href="/about" class="nav-link-gradient mobile-menu-item"><i class="fas fa-info-circle mr-2"></i>About</a>
+                </div>
+            </div>
+        </nav>
+
+        <main class="flex-1 relative z-10">
+            {% block content_wrapper %}
+            <div class="mx-auto px-6 py-8">
+                <div class="animate-fade-in">
+                    {% block content %}
+                    <!-- Conten default demo -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="glass rounded-2xl p-6 card-hover glow-on-hover">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-slate-300 text-sm font-medium">Total Data</p>
+                                    <p class="text-white text-2xl font-bold pulse-slow">1,234</p>
+                                </div>
+                                <div class="w-12 h-12 bg-slate-600 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-database text-white"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass rounded-2xl p-6 card-hover glow-on-hover">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-slate-300 text-sm font-medium">Fenomena</p>
+                                    <p class="text-white text-2xl font-bold pulse-slow">87</p>
+                                </div>
+                                <div class="w-12 h-12 bg-slate-600 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-eye text-white"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass rounded-2xl p-6 card-hover glow-on-hover">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-slate-300 text-sm font-medium">Trend</p>
+                                    <p class="text-white text-2xl font-bold pulse-slow">456</p>
+                                </div>
+                                <div class="w-12 h-12 bg-slate-600 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-chart-line text-white"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass rounded-3xl p-8 text-center card-hover">
+                        <h2 class="text-3xl font-bold text-white mb-4">Selamat Datang di Dashboard BPS Sidoarjo</h2>
+                        <p class="text-slate-300 text-lg mb-6">Pusat data dan statistik terpercaya untuk Kabupaten Sidoarjo</p>
+                        <button class="bg-gradient-to-r from-slate-600 to-slate-700 text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                            <i class="fas fa-rocket mr-2"></i> Mulai Eksplorasi
+                        </button>
+                    </div>
+                    {% endblock %}
+                </div>
+            </div>
+            {% endblock content_wrapper %}
+        </main>
+
+        <footer class="glass mt-12 relative z-10">
+            <div class="max-w-7xl mx-auto px-6 py-8">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="flex items-center space-x-3 mb-4 md:mb-0">
+                        <div class="w-8 h-8 bg-gradient-to-br from-slate-600 to-slate-700 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-chart-line text-white text-sm"></i>
+                        </div>
+                        <p class="text-white font-medium">&copy; 2025 BPS Kabupaten Sidoarjo</p>
+                    </div>
+                    <div class="flex items-center space-x-6">
+                        <a href="https://www.facebook.com/bpsstatistics/#" class="text-blue-300 hover:text-white transition-colors"><i class="fab fa-facebook text-xl"></i></a>
+                        <a href="https://x.com/bps_statistics" class="text-gray-300 hover:text-white transition-colors"><i class="fab fa-twitter text-xl"></i></a>
+                        <a href="https://www.instagram.com/bps.sidoarjo?utm_source=ig_web_button_share_sheet&igsh=MW1kb3g2cXc3cWJjag==" class="text-pink-300 hover:text-white transition-colors"><i class="fab fa-instagram text-xl"></i></a>
+                        <a href="mailto:bps3515@bps.go.id" class="text-red-300 hover:text-white transition-colors"><i class="fas fa-envelope text-xl"></i></a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Mobile menu toggle + animasi
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            const hamburger = document.querySelector('.hamburger-btn i');
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden'); menu.style.opacity='0'; menu.style.transform='translateY(-10px)';
+                hamburger.classList.replace('fa-bars','fa-times');
+                setTimeout(()=>{ menu.style.transition='all .3s ease'; menu.style.opacity='1'; menu.style.transform='translateY(0)'; },10);
+            } else {
+                menu.style.transition='all .3s ease'; menu.style.opacity='0'; menu.style.transform='translateY(-10px)';
+                hamburger.classList.replace('fa-times','fa-bars');
+                setTimeout(()=>{ menu.classList.add('hidden'); },300);
+            }
+        }
+
+        // Smooth anchor
+        document.querySelectorAll('a[href^="#"]').forEach(a=>{
+            a.addEventListener('click', e=>{
+                e.preventDefault();
+                const t = document.querySelector(a.getAttribute('href'));
+                if (t) t.scrollIntoView({behavior:'smooth'});
+            });
+        });
+
+        // Entrance anim
+        window.addEventListener('load', ()=>{
+            const els = document.querySelectorAll('.animate-fade-in');
+            els.forEach((el, i)=>{
+                el.style.opacity='0'; el.style.transform='translateY(20px)'; el.style.transition='all .6s ease';
+                setTimeout(()=>{ el.style.opacity='1'; el.style.transform='translateY(0)'; }, i*100);
+            });
+        });
+
+        // Particles dekoratif
+        function createParticle(){
+            const p = document.createElement('div');
+            p.className='fixed w-1 h-1 bg-white rounded-full opacity-30 pointer-events-none';
+            p.style.zIndex='0';
+            p.style.left = Math.random()*window.innerWidth + 'px';
+            p.style.top = window.innerHeight + 'px';
+            document.body.appendChild(p);
+            const d = Math.random()*3000 + 2000;
+            p.animate([{transform:'translateY(0)',opacity:.3},{transform:`translateY(-${window.innerHeight+100}px)`,opacity:0}],{duration:d,easing:'linear'}).onfinish=()=>p.remove();
+        }
+        setInterval(createParticle, 500);
+
+        // Active nav
+        document.addEventListener('DOMContentLoaded', ()=>{
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.nav-link-gradient').forEach(link=>{
+                const linkPath = new URL(link.href).pathname;
+                if (currentPath === linkPath || (currentPath==='/' && linkPath==='/')) link.classList.add('nav-link-active');
+            });
+        });
+
+        // Hover tweak
+        document.querySelectorAll('.nav-link-gradient').forEach(link=>{
+            link.addEventListener('mouseenter', function(){ this.style.transform='translateY(-3px) scale(1.02)'; });
+            link.addEventListener('mouseleave', function(){ if(!this.classList.contains('nav-link-active')) this.style.transform=''; });
+        });
+
+        // Close mobile menu klik di luar
+        document.addEventListener('click', (e)=>{
+            const mm = document.getElementById('mobileMenu');
+            const hb = document.querySelector('.hamburger-btn');
+            if (!mm.contains(e.target) && !hb.contains(e.target)){
+                if (!mm.classList.contains('hidden')) toggleMobileMenu();
+            }
+        });
+
+        // =========================
+        // GLOBAL TOAST
+        // =========================
+        window.showToast = function(message, type = 'info', timeout = 3200){
+            try{
+                const colors = {
+                    success:'linear-gradient(90deg,#22c55e,#16a34a)',
+                    info:'linear-gradient(90deg,#3b82f6,#1d4ed8)',
+                    warning:'linear-gradient(90deg,#eab308,#ca8a04)',
+                    error:'linear-gradient(90deg,#ef4444,#dc2626)'
+                };
+                const icons = {success:'fa-check', info:'fa-info', warning:'fa-exclamation-triangle', error:'fa-times'};
+
+                const root = document.getElementById('toast-root');
+                const wrap = document.createElement('div');
+                wrap.style.pointerEvents = 'auto';
+                wrap.style.background = colors[type] || colors.info;
+                wrap.style.color = '#fff';
+                wrap.style.borderRadius = '12px';
+                wrap.style.boxShadow = '0 10px 30px rgba(0,0,0,.25)';
+                wrap.style.border = '1px solid rgba(255,255,255,.2)';
+                wrap.style.overflow = 'hidden';
+                wrap.style.transform = 'translateX(110%)';
+                wrap.style.transition = 'transform .3s ease';
+                wrap.style.minWidth = '280px';
+                wrap.style.zIndex = '2147483647';
+
+                wrap.innerHTML = `
+                  <div style="padding:12px 16px;">
+                    <div style="display:flex;align-items:flex-start;gap:12px;">
+                      <i class="fas ${icons[type]||icons.info}" style="margin-top:2px;"></i>
+                      <div style="flex:1;font-size:14px;line-height:1.4;">${message}</div>
+                      <button type="button" aria-label="Close" style="margin-left:8px;color:rgba(255,255,255,.85)"><i class="fas fa-times"></i></button>
+                    </div>
+                  </div>
+                  <div style="height:4px;background:rgba(255,255,255,.2);">
+                    <div style="height:100%;background:rgba(255,255,255,.7);animation:shrink ${timeout}ms linear forwards;"></div>
+                  </div>
+                `;
+                wrap.querySelector('button').onclick = ()=>{ wrap.style.transform='translateX(110%)'; setTimeout(()=>wrap.remove(), 250); };
+                root.appendChild(wrap);
+                requestAnimationFrame(()=>{ wrap.style.transform='translateX(0)'; });
+                setTimeout(()=>{ wrap.style.transform='translateX(110%)'; setTimeout(()=>wrap.remove(),250); }, timeout);
+            }catch(e){ console.error('Toast error:', e); }
+        };
+
+        // Auto render Flask flash messages
+        document.addEventListener('DOMContentLoaded', () => {
+            {% with msgs = get_flashed_messages(with_categories=true) %}
+            {% for category, msg in msgs %}
+              showToast({{ msg|tojson }}, {{ category|tojson }});
+            {% endfor %}
+            {% endwith %}
+        });
+    </script>
+</body>
+</html>

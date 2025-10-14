@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Login Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-sm mx-auto">
+  <div class="glass rounded-2xl p-6">
+    <h1 class="text-2xl font-bold text-white mb-1">Login Admin</h1>
+    <p class="text-blue-200 text-sm mb-4">Masuk untuk mengelola data &amp; sinkronisasi GitHub.</p>
+
+    <!-- Info sisa percobaan -->
+    <div id="attempts-info" class="mb-4 text-xs text-blue-200">
+      Sisa percobaan: <span id="attempts-left">{{ attempts_left }}</span>/<span id="max-attempts">{{ max_attempts }}</span>
+    </div>
+
+    <form id="login-form" method="post" class="space-y-4" autocomplete="on" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <div>
+        <label class="block text-blue-100 text-sm mb-1">Username</label>
+        <input id="inp-user" name="username" autocomplete="username"
+               class="w-full rounded-xl bg-black text-white p-3 outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-400"
+               placeholder="admin" required>
+      </div>
+
+      <div>
+        <label class="block text-blue-100 text-sm mb-1">Password</label>
+        <input id="inp-pass" type="password" name="password" autocomplete="current-password"
+               class="w-full rounded-xl bg-black text-white p-3 outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-400"
+               placeholder="••••••••" required>
+      </div>
+
+      <button id="btn-login" type="submit"
+              class="w-full px-5 py-3 rounded-xl font-semibold text-white transition-colors
+                     flex items-center justify-center gap-2">
+        <span class="btn-icon" style="display:none;"><i class="fas fa-ban"></i></span>
+        <span class="btn-text">Masuk</span>
+      </button>
+    </form>
+
+    <!-- Footer box: teks + countdown -->
+    <div class="flex items-center justify-between mt-4">
+      <p class="text-blue-300 text-xs">Butuh akses? Hubungi admin sistem.</p>
+
+      <!-- Badge cooldown (muncul saat aktif) -->
+      <div id="cooldown-badge"
+           class="hidden text-xs font-medium rounded-full px-3 py-1 flex items-center gap-2"
+           style="background: linear-gradient(90deg,#ef4444,#dc2626); color: #fff;"
+           aria-live="polite" aria-atomic="true">
+        <i class="fas fa-hourglass-half"></i>
+        <span>Cooldown: <span id="cooldown-secs">0</span> detik</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JS di dalam content agar pasti eksekusi -->
+<script>
+(function IntegrateServerLockToUI(){
+  // ===== Data dari server =====
+  const SERVER_LOCK = {{ (lock_remaining or 0) | int }}; // sisa detik real dari server
+  const MAX_ATTEMPTS = {{ (max_attempts or 3) | int }};
+  const INITIAL_ATTEMPTS_LEFT = {{ (attempts_left or 3) | int }};
+
+  // ===== Konstanta UI (localStorage key) =====
+  const LS_KEY = 'admin_login_cooldown_until';
+
+  // ===== Elemen =====
+  const form     = document.getElementById('login-form');
+  const userEl   = document.getElementById('inp-user');
+  const passEl   = document.getElementById('inp-pass');
+  const btn      = document.getElementById('btn-login');
+  const btnIcon  = btn.querySelector('.btn-icon');
+
+  const cdWrap   = document.getElementById('cooldown-badge');
+  const cdSecs   = document.getElementById('cooldown-secs');
+
+  const attemptsLeftEl = document.getElementById('attempts-left');
+  const maxAttemptsEl  = document.getElementById('max-attempts');
+
+  // set teks info attempts dari server
+  attemptsLeftEl.textContent = String(INITIAL_ATTEMPTS_LEFT);
+  maxAttemptsEl.textContent  = String(MAX_ATTEMPTS);
+
+  // ===== Utils =====
+  const nowMs    = () => Date.now();
+  const getUntil = () => parseInt(localStorage.getItem(LS_KEY) || '0', 10);
+  const setUntil = (ts) => ts ? localStorage.setItem(LS_KEY, String(ts)) : localStorage.removeItem(LS_KEY);
+  const isCooling = () => getUntil() > nowMs();
+
+  let timer = null;
+
+  function applyBtnStyle({ enabled, cooling }) {
+    btn.classList.remove('bg-green-600','hover:bg-green-700','bg-gray-600','cursor-not-allowed');
+    if (enabled) {
+      btn.disabled = false;
+      btn.classList.add('bg-green-600','hover:bg-green-700');
+      btnIcon.style.display = 'none';
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+    } else {
+      btn.disabled = true;
+      btn.classList.add('bg-gray-600','cursor-not-allowed');
+      btn.style.opacity = '0.95';
+      btn.style.pointerEvents = 'none';
+      btnIcon.style.display = cooling ? 'inline-flex' : 'none';
+    }
+  }
+
+  function showBadge(seconds) {
+    if (seconds > 0) {
+      cdSecs.textContent = String(seconds);
+      cdWrap.classList.remove('hidden');
+    } else {
+      cdWrap.classList.add('hidden');
+    }
+  }
+
+  function updateButtonByState() {
+    if (isCooling()) { applyBtnStyle({ enabled:false, cooling:true }); return; }
+    const ready = userEl.value.trim().length > 0 && passEl.value.length > 0;
+    applyBtnStyle({ enabled: ready, cooling:false });
+  }
+
+  function startCountdown() {
+    if (timer) clearInterval(timer);
+    timer = null;
+
+    if (!isCooling()) {
+      showBadge(0);
+      updateButtonByState();
+      return;
+    }
+    applyBtnStyle({ enabled:false, cooling:true });
+
+    const tick = () => {
+      const leftMs  = Math.max(0, getUntil() - nowMs());
+      const leftSec = Math.ceil(leftMs / 1000);
+      showBadge(leftSec);
+      if (leftMs <= 0) {
+        clearInterval(timer);
+        timer = null;
+        setUntil(0);
+        showBadge(0);
+        updateButtonByState();
+      }
+    };
+    tick();
+    timer = setInterval(tick, 250);
+  }
+
+  // ===== Integrasi server → UI =====
+  // Kalau server kirim lock_remaining > 0, set localStorage sesuai
+  if (SERVER_LOCK > 0) {
+    const target = nowMs() + SERVER_LOCK * 1000;
+    // hanya overwrite kalau lebih kecil (biar lebih akurat/terbaru)
+    if (target > getUntil()) setUntil(target);
+  } else {
+    // Kalau server bilang tidak lock, dan localStorage ada sisa yang “aneh”, bersihkan
+    // (ini mencegah kasus frontend cooldown nyangkut)
+    if (!isCooling()) setUntil(0);
+  }
+
+  // ===== Init UI =====
+  updateButtonByState();
+  if (isCooling()) startCountdown();
+
+  // Realtime validasi input
+  userEl.addEventListener('input', updateButtonByState);
+  passEl.addEventListener('input', updateButtonByState);
+
+  // Submit: JANGAN memulai cooldown di klien.
+  // Biarkan server yang menentukan (dan mengirim lock_remaining saat redirect).
+  form.addEventListener('submit', (e) => {
+    if (isCooling()) {
+      e.preventDefault();
+      if (window.showToast) showToast('Masih dalam masa tunggu. Coba lagi setelah hitungan selesai.', 'warning');
+      return;
+    }
+    const u = userEl.value.trim();
+    const p = passEl.value;
+    if (!u && !p) { e.preventDefault(); if (window.showToast) showToast('Username dan password wajib diisi.', 'error'); return; }
+    if (!u)       { e.preventDefault(); if (window.showToast) showToast('Username wajib diisi.', 'error'); return; }
+    if (!p)       { e.preventDefault(); if (window.showToast) showToast('Password wajib diisi.', 'error'); return; }
+    // Tidak set cooldown di sini!
+  });
+
+  // Sinkron jika user balik ke tab
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      if (isCooling()) startCountdown();
+      else { showBadge(0); updateButtonByState(); }
+    }
+  });
+})();
+</script>
+{% endblock %}
