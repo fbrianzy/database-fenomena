@@ -2,7 +2,75 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0] - 2024-01-XX - Major Refactoring
+## [3.0.0] - 2025-10-16 - Dashfena GitHub-Sync Revamp 
+
+### Added 
+
+- Modular Flask structure with separated layers: routes, services, utils, and middlewares.
+- Admin routes isolated in routes/admin/ for better maintenance and access control.
+- Server preflight test to check environment variables (GitHub Token, Owner, Repo, Branch) before startup.
+- Real-time synchronization with GitHub repository (database-fenomena) displaying the latest sync time.
+- Enhanced admin panel for CSV-based CRUD operations.
+- Improved UI/UX: smoother loading animation, typing effect, and no blink during initialization.
+- Dynamic server status indicators for Running, Stopped, and Restarting.
+- Automatic removal of trailing slashes in routes for cleaner URLs.
+- Active navigation link detection in navbar.
+
+### Changed 
+
+- Base template refactored to use Tailwind CSS 3 and Font Awesome 6.
+- Navbar made more responsive for mobile screens with balanced padding and spacing.
+- Scrollbar hidden for clean appearance.
+- Optimized GitHub data loader to fetch only recent files per category folder.
+- Improved home statistics to include month-over-month comparison and positive growth indicator.
+- Refactored all routes to follow consistent blueprint registration order and prefixing.
+- Reduced redundant imports and streamlined service calls.
+
+### Fixed 
+
+- Removed blinking effect during page load.
+- Resolved duplicated category entries from multiple CSV reads.
+- Fixed active navbar detection on /fenomena page.
+- Addressed CSRF token mismatch between localhost and IP-based hosts.
+- Added missing datetime and requests imports in legacy modules.
+- Corrected `url_for` path and static file references.
+
+### Performance 
+
+- Optimized GitHub API requests and caching.
+- Reduced redundant reloads after CSV upload.
+- Faster dashboard render times and smoother transitions.
+
+### Security 
+
+- Enhanced CSRF validation and session token consistency.
+- Added request logging for suspicious activity.
+- Sanitized inputs and improved header handling for safer user interaction.
+
+### Folder Structure
+```text
+app/
+ ├── __init__.py
+ ├── config/
+ ├── routes/
+ │   ├── admin/
+ │   ├── api/
+ │   └── fenomena/
+ ├── services/
+ ├── utils/
+ ├── templates/
+ ├── static/
+ └── middlewares/
+run.py
+wsgi.py
+CPanel/
+ ├── components/
+ ├── services/
+ ├── utils/
+ └── app.py
+```
+
+## [2.0.0] - 2025-10-05 - Major Refactoring
 
 ### Added
 - Professional folder structure with separation of concerns
@@ -87,7 +155,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [1.0.0] - 2024-XX-XX - Initial Release
+## [1.0.0] - 2025-08-30 - Initial Release
 
 ### Added
 - Basic Flask application
