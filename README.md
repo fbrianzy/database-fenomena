@@ -29,6 +29,7 @@ database-fenomena/
 ├── templates/                 # Template CSV
 │   ├── lapangan_usaha.csv
 │   └── pengeluaran.csv
+├── LICENSE                    # by MIT License
 ├── README.md
 ├── CONTRIBUTING.md
 ├── CODE_OF_CONDUCT.md
