@@ -433,7 +433,7 @@ Tim akan memeriksa:
 
 Jika mengalami kesulitan atau memiliki pertanyaan:
 
-- **Email:** database@dashfena.bps.go.id
+- **Email:** cs@dashfena.bps.go.id
 - **GitHub Issues:** [Laporkan masalah teknis](https://github.com/fbrianzy/database-fenomena/issues)
 - **GitHub Discussions:** [Diskusi umum](https://github.com/fbrianzy/database-fenomena/discussions)
 
